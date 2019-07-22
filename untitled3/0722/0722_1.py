@@ -7,7 +7,7 @@ mnist = input_data.read_data_sets("/tmp_1_data/", one_hot=True)
 
 
 # CNN 모델 정의
-def build_CNN_classifier(x):
+def build_cnn_classifier(x):
 
     # 28x28 크기, grayscale 이미지 -> 컬러 채널 1
     x_image = tf.reshape(x, [-1, 28, 28, 1])
@@ -84,7 +84,7 @@ x = tf.placeholder(tf.float32, shape=[None, 784], name='x')
 y = tf.placeholder(tf.float32, shape=[None, 10], name='y')
 
 # CNN 분류기 선언
-y_pred, logits = build_CNN_classifier(x)
+y_pred, logits = build_cnn_classifier(x)
 
 # 손실함수와 옵티마이저 정의
 loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=y, logits=logits), name='loss')
@@ -101,6 +101,7 @@ with tf.Session() as sess:
     tensorboard_writer = tf.summary.FileWriter('./tmp_1/logs', sess.graph)
 
     # 2000step 최적화 수행
+    # 10000step 최적화 할 경우 accuracy : 99%
     for i in range(2000):
 
         # 50개씩 MNIST 데이터 load
