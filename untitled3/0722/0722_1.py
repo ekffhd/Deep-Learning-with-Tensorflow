@@ -3,7 +3,7 @@ import tensorflow as tf
 
 # MNIST 데이터 다운로드
 from tensorflow.examples.tutorials.mnist import input_data
-mnist = input_data.read_data_sets("/tmp_1_data/", one_hot=True)
+mnist = input_data.read_data_sets("./tmp_1/data/", one_hot=True)
 
 
 # CNN 모델 정의
