@@ -11,7 +11,7 @@ mnist = input_data.read_data_sets('/tmp/data/', one_hot=True)
 # 학습에 필요한 설정값들을 정의
 learning_rate_RMSProp = 0.02
 learning_rate_GradientDescent = 0.5
-training_epochs = 100
+training_epochs = 10
 batch_size = 256
 display_step = 1
 examples_to_show = 10
@@ -20,8 +20,8 @@ hidden1_size = 256
 hidden2_size = 64
 
 # 입력값
-x = tf.placeholder(tf.float32, shape=[None, input_size])
-y = tf.placeholder(tf.float32, shape=[None, 10])
+x = tf.placeholder(tf.float32, shape=[None, input_size], name='x')
+y = tf.placeholder(tf.float32, shape=[None, 10], name='y')
 
 
 def build_auto_encoder(x):
@@ -69,15 +69,20 @@ y_pred_softmax = build_softmax_classifier(extracted_features)
 # 1. Pre-Training :MNIST 데이터 재구축을 목적으로하는 손실 함수와 옵티마이저 정의
 pretraining_loss = tf.reduce_mean(tf.pow(y_true - y_pred, 2))
 pretraining_train_step = tf.train.RMSPropOptimizer(learning_rate_RMSProp).minimize(pretraining_loss)
+tf.summary.scalar('pre-training loss', pretraining_loss)
 
 # 2. Fine-Tuning : MNIST 데이터 분류를 목적으로 하는 손실 함수와 옵티마이저 정의
 # cross-entropy loss 함수
 finetuning_loss = tf.reduce_mean(-tf.reduce_sum(y * tf.log(y_pred_softmax), reduction_indices=[1]))
 finetuning_train_step = tf.train.GradientDescentOptimizer(learning_rate_GradientDescent).minimize(finetuning_loss)
+tf.summary.scalar('fine-tunining loss', finetuning_loss)
 
 with tf.Session() as sess:
 
     sess.run(tf.global_variables_initializer())
+    merged = tf.summary.merge_all()
+    tensorboard_writer = tf.summary.FileWriter('./0721_1_logs', sess.graph)
+
     total_batch = int(mnist.train.num_examples / batch_size)
 
     # Step1 : MNIST 데이터 재구축을 위한 오토인코더 최적화
@@ -90,6 +95,9 @@ with tf.Session() as sess:
         if epoch % display_step == 0:
             print("반복(Epoch): %d, Pre-training 손실 함수(pretraining_loss): %f" % ((epoch+1), pretraining_loss_print))
 
+        pretraining_summary = sess.run(merged, feed_dict={x: batch_xs, y: batch_ys})
+        tensorboard_writer.add_summary(pretraining_summary, i)
+
     # Step2 : MNIST데이터 분류를 위한 오토인코더 + Softmax 분류기 최적화
     for epoch in range(training_epochs+10):
 
@@ -98,8 +106,11 @@ with tf.Session() as sess:
             _, finetuning_loss_print = sess.run([finetuning_train_step, finetuning_loss],
                                                 feed_dict={x: batch_xs, y: batch_ys})
 
-            if epoch % display_step == 0:
-                print("반복(Epoch): %d, Fine-tuning 손실 함수(finetuning_loss): %f" % ((epoch + 1), finetuning_loss_print))
+        if epoch % display_step == 0:
+            print("반복(Epoch): %d, Fine-tuning 손실 함수(finetuning_loss): %f" % ((epoch + 1), finetuning_loss_print))
+
+        finetuning_summary = sess.run(merged, feed_dict={x: batch_xs, y: batch_ys})
+        tensorboard_writer.add_summary(finetuning_summary, i)
 
     print("Step 2: MNIST 데이터 분류를 위한 오토인코더 + Softmax 분류기 최적화 완료(Fine-Tuning)")
 
